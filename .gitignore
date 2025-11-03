@@ -1,0 +1,11 @@
+# Build artifacts
+*.o
+*.obj
+*.ptx
+*.linkinfo
+*.dSYM/
+*.out
+hello_cuda
+# Editor/OS
+*~
+.DS_Store
