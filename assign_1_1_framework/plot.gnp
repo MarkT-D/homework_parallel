@@ -1,4 +1,9 @@
-set terminal png
+set terminal pngcairo size 1200,600   # better font/antialiasing + size
 set output "plot.png"
+set title "Wave amplitudes"
+set xlabel "i (space index)"
+set ylabel "A[i]"
+set grid
 
-plot 'result.txt' with lines notitle
+plot 'result.txt' using 0:1 with lines title "final"
+set output
