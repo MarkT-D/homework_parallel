@@ -11,8 +11,9 @@
 
 #include <cstdlib>
 #include <iostream>
-
 #include "simulate.hh"
+
+double C = 0.15;
 
 using namespace std;
 
@@ -50,7 +51,31 @@ static void checkCudaCall(cudaError_t result) {
 double *simulate(const long i_max, const long t_max, const long block_size,
                  double *old_array, double *current_array, double *next_array) {
 
-    // YOUR CODE HERE
+    for (int j = 0; j < t_max; j++) {
+
+        for (int i = 0; i < i_max; i++) {
+
+            if (i == 0 || i == i_max-1) {
+                next_array[i]= 0;
+
+            } else {
+
+                next_array[i] = 2 * current_array[i] - old_array[i]
+                + C * (current_array[i-1] - (2*current_array[i] - current_array[i+1]));
+
+            }
+            // printf("%lf", next_array[i]);
+
+        }
+        double *temp = old_array;
+        old_array = current_array;
+        current_array = next_array;
+        next_array = temp;
+    }
+    printf("\n");
+    printf("Number of elements: %d", i_max);
+    printf("\n");
+
 
     return current_array;
 }
