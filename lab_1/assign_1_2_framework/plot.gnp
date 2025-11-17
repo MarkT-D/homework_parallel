@@ -1,0 +1,29 @@
+# plot.gnp — plot final wave amplitudes from result.txt (OpenMP assignment)
+# Usage (defaults):      gnuplot plot.gnp
+# Usage (custom names):  gnuplot -e "ARG1='result.txt'; ARG2='plot.png'; TITLE='Wave (sinfull)'" plot.gnp
+# It also shows OMP settings in the title if available.
+
+# --- parameters with sensible defaults ---
+if (!exists("ARG1")) ARG1 = "result.txt"     # input data file (one value per line)
+if (!exists("ARG2")) ARG2 = "plot.png"       # output image file
+# auto title: include OpenMP env if set
+threads = (strlen(ENVIRON["OMP_NUM_THREADS"])>0 ? ENVIRON["OMP_NUM_THREADS"] : "default")
+sched   = (strlen(ENVIRON["OMP_SCHEDULE"])>0   ? ENVIRON["OMP_SCHEDULE"]   : "default")
+if (!exists("TITLE")) TITLE = sprintf("Wave amplitudes  (threads=%s, schedule=%s)", threads, sched)
+
+# --- output settings ---
+set terminal pngcairo size 1200,600           # nicer anti-aliased PNG
+set output ARG2
+
+# --- plot cosmetics ---
+set title TITLE
+set xlabel "i (space index)"
+set ylabel "A[i]"
+set grid
+set key right top
+
+# `using 0:1` = x is row index (0..N-1), y is first column value
+plot ARG1 using 0:1 with lines lw 1.5 title "final"
+
+# finalize file
+set output
