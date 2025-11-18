@@ -1,11 +1,13 @@
 /*
  * Names: E. Ottens, M. Temchenko
  * UvAnetIDs: 14425289, 15185869
+ * Course: Distributed and Parallel Programming
  *
  * Implementation of a wave equation simulation, parallelized on the GPU using
- * CUDA.
- *
- *
+ * CUDA. The code is divided by CUDA into host and device code. The host code
+ * is the CPU code while the device code is the GPU code.
+ * The simulation parallelizes by using one thread per space/data point
+ * computation and rotates arrays after each time step.
  */
 
 #include <cstdlib>
@@ -37,7 +39,8 @@ static void checkCudaCall(cudaError_t result) {
 
 /* CUDA kernel for computing one time step of the wave equation.
  *
- * The wave equation is: A[i,t+1] = 2*A[i,t] - A[i,t-1] + c*(A[i-1,t] - 2*A[i,t] + A[i+1,t])
+ * The wave equation is:
+ * A[i,t+1] = 2*A[i,t] - A[i,t-1] + c*(A[i-1,t] - (2*A[i,t] + A[i+1,t]))
  *
  * Each thread computes one element of the next array. The boundary elements
  * (index 0 and i_max-1) are kept at 0.
@@ -77,7 +80,6 @@ __global__ void waveEquation(double* old_array, double* current_array,
  * old_array: array of size i_max filled with data for t-1
  * current_array: array of size i_max filled with data for t
  * next_array: array of size i_max. You should fill this with t+1
- *
  */
 double *simulate(const long i_max, const long t_max, const long block_size,
                  double *old_array, double *current_array, double *next_array) {
