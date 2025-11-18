@@ -1,11 +1,10 @@
 /*
- * simulate.cu
+ * Names: E. Ottens, M. Temchenko
+ * UvAnetIDs: 14425289, 15185869
  *
  * Implementation of a wave equation simulation, parallelized on the GPU using
  * CUDA.
  *
- * You are supposed to edit this file with your implementation, and this file
- * only.
  *
  */
 
@@ -85,7 +84,7 @@ double *simulate(const long i_max, const long t_max, const long block_size,
     // Allocate device memory (memory on the GPU) for the three arrays
     double* device_old = NULL;
     double* device_current = NULL;
-    double* device_new = NULL;
+    double* device_next = NULL;
 
     // Array size calculation in bytes
     size_t array_size = i_max * sizeof(double);
@@ -105,23 +104,26 @@ double *simulate(const long i_max, const long t_max, const long block_size,
         return current_array;
     }
 
-    checkCudaCall(cudaMalloc((void **) &device_new, array_size));
-    if (device_new == NULL) {
+    // Allocate memory on the GPU for next_array
+    checkCudaCall(cudaMalloc((void **) &device_next, array_size));
+    if (device_next == NULL) {
         checkCudaCall(cudaFree(device_old));
         checkCudaCall(cudaFree(device_current));
-        cerr << "Could not allocate new_array on GPU." << endl;
+        cerr << "Could not allocate next_array on GPU." << endl;
         return current_array;
     }
 
     // Copy the arrays from the CPU to the GPU to get the two previous time steps
-    checkCudaCall(cudaMemcpy(device_old, old_array, array_size, cudaMemcpyHostToDevice));
-    checkCudaCall(cudaMemcpy(device_current, current_array, array_size, cudaMemcpyHostToDevice));
+    checkCudaCall(cudaMemcpy(device_old, old_array, array_size,
+        cudaMemcpyHostToDevice));
+    checkCudaCall(cudaMemcpy(device_current, current_array, array_size,
+        cudaMemcpyHostToDevice));
 
     long num_blocks = (i_max + block_size - 1) / block_size;
 
     for (long t = 0; t < t_max; t++) {
         waveEquation<<<num_blocks, block_size>>>(device_old, device_current,
-            device_new, i_max);
+            device_next, i_max);
 
         // Check for kernel launch errors
         checkCudaCall(cudaGetLastError());
@@ -132,18 +134,19 @@ double *simulate(const long i_max, const long t_max, const long block_size,
         // Rotate arrays for next iteration
         double* temp = device_old;
         device_old = device_current;
-        device_current = device_new;
-        device_new = temp;
+        device_current = device_next;
+        device_next = temp;
     }
 
     // After t_max iterations, deviceCurrent contains the final result
     // Copy the result back from the GPU to the CPU (the host)
-    checkCudaCall(cudaMemcpy(current_array, device_current, array_size, cudaMemcpyDeviceToHost));
+    checkCudaCall(cudaMemcpy(current_array, device_current, array_size,
+        cudaMemcpyDeviceToHost));
 
     // Free device memory
     checkCudaCall(cudaFree(device_old));
     checkCudaCall(cudaFree(device_current));
-    checkCudaCall(cudaFree(device_new));
+    checkCudaCall(cudaFree(device_next));
 
     return current_array;
 }
