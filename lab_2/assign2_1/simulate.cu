@@ -51,7 +51,7 @@ static void checkCudaCall(cudaError_t result) {
  *   next_array: output array for wave values at time t+1
  *   i_max: number of data points in the wave
  */
-__global__ void waveEquation(double* old_array, double* current_array,
+__global__ void waveEquationKernel(double* old_array, double* current_array,
                                     double* next_array, const long i_max) {
     int block_index = blockIdx.x;
     int block_dimension = blockDim.x;
@@ -124,8 +124,8 @@ double *simulate(const long i_max, const long t_max, const long block_size,
     long num_blocks = (i_max + block_size - 1) / block_size;
 
     for (long t = 0; t < t_max; t++) {
-        waveEquation<<<num_blocks, block_size>>>(device_old, device_current,
-            device_next, i_max);
+        waveEquationKernel<<<num_blocks, block_size>>>(device_old,
+            device_current, device_next, i_max);
 
         // Check for kernel launch errors
         checkCudaCall(cudaGetLastError());
