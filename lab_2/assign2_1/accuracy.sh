@@ -1,49 +1,44 @@
 #!/bin/bash
 
-# --- CONFIG -------------------------------
-OUTPUT="accuracy.csv"
-SIZES=(1000 10000 100000 1000000)   # i_max values
-TMAX=1000                           # number of timesteps
-BLOCK=512                           # thread block size
-# ------------------------------------------
+module load python/3.10.8   # Load Python
+# pip install --user numpy   # Run once if numpy is missing
 
+OUTPUT="accuracy.csv"
 echo "N,steps,block_size,max_abs_error" > $OUTPUT
 
-echo "Running accuracy tests..."
-echo
+STEPS=1000
+BLOCK=512
 
+SIZES=(1000 10000 100000 1000000)
+
+echo "Running accuracy tests..."
 for N in "${SIZES[@]}"; do
     echo "----------------------------------------------"
     echo "Testing i_max = $N"
     echo "----------------------------------------------"
 
-    # --------------------------
-    # Run the CUDA version
-    # --------------------------
-    echo "[CUDA] Running on GPU..."
-    prun -np 1 -native "-C TitanRTX" ./assign2_1 $N $TMAX $BLOCK
+    # Run CUDA+Sequential hybrid program, output returned to local machine
+    prun -np 1 -native "-C TitanRTX" -o prun_${N}.log ./assign2_1 $N $STEPS $BLOCK
 
-    # GPU output is in result.txt
-    mv result.txt cuda_result_$N.txt
+    # Ensure files exist
+    if [[ ! -f seq_result.txt ]] || [[ ! -f result.txt ]]; then
+        echo "ERROR: Missing seq_result.txt or result.txt for N=$N"
+        echo "$N,$STEPS,$BLOCK,ERROR" >> $OUTPUT
+        continue
+    fi
 
-    # Sequential output is in seq_result.txt
-    mv seq_result.txt seq_result_$N.txt
-
-    # --------------------------
-    # Compare CUDA vs Sequential
-    # --------------------------
+    # Compare arrays using Python
     ERROR=$(python3 - <<EOF
 import numpy as np
-cuda = np.loadtxt("cuda_result_${N}.txt")
-seq  = np.loadtxt("seq_result_${N}.txt")
+cuda = np.loadtxt("result.txt")
+seq  = np.loadtxt("seq_result.txt")
 print(np.max(np.abs(cuda - seq)))
 EOF
 )
 
+    echo "$N,$STEPS,$BLOCK,$ERROR" >> $OUTPUT
     echo "Error for N=$N: $ERROR"
-    echo "$N,$TMAX,$BLOCK,$ERROR" >> $OUTPUT
-
 done
 
-echo
-echo "Done! Accuracy results saved to $OUTPUT"
+echo ""
+echo "Done! Accuracy results saved to accuracy.csv"
