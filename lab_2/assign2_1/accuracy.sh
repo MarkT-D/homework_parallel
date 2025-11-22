@@ -1,8 +1,5 @@
 #!/bin/bash
 
-module load python/3.10.8   # Load Python
-# pip install --user numpy   # Run once if numpy is missing
-
 OUTPUT="accuracy.csv"
 echo "N,steps,block_size,max_abs_error" > $OUTPUT
 
