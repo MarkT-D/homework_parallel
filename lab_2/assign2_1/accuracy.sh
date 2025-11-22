@@ -18,8 +18,8 @@ for N in "${SIZES[@]}"; do
     prun -np 1 -native "-C TitanRTX" -o prun_${N}.log ./assign2_1 $N $STEPS $BLOCK
 
     # Ensure files exist
-    if [[ ! -f seq_result.txt ]] || [[ ! -f result.txt ]]; then
-        echo "ERROR: Missing seq_result.txt or result.txt for N=$N"
+    if [[ ! -f result_cuda.txt ]] || [[ ! -f result.txt ]]; then
+        echo "ERROR: Missing result_cuda.txt or result.txt for N=$N"
         echo "$N,$STEPS,$BLOCK,ERROR" >> $OUTPUT
         continue
     fi
@@ -28,7 +28,7 @@ for N in "${SIZES[@]}"; do
     ERROR=$(python3 - <<EOF
 import numpy as np
 cuda = np.loadtxt("result.txt")
-seq  = np.loadtxt("seq_result.txt")
+seq  = np.loadtxt("result_cuda.txt")
 print(np.max(np.abs(cuda - seq)))
 EOF
 )
