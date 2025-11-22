@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
     );
     seqTimer.stop();
     cout << seqTimer;
-    file_write_double_array("seq_result.txt", seq_result_array, i_max);
+    file_write_double_array("result_cuda.txt", seq_result_array, i_max);
 
     fill(old_array, 1, i_max / 4, 0, 2 * M_PI);
     fill(current_array, 2, i_max / 4, 0, 2 * M_PI);
