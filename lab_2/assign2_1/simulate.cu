@@ -168,7 +168,7 @@ double *simulate(const long i_max, const long t_max, const long block_size,
 double *simulateSeq(const int i_max, const int t_max, const int num_threads,
         double *old_array, double *current_array, double *next_array)
 {
-    // c = 0.15
+    double C = 0.15;
     // new = 2*current - old + c*(current[left] - (2*current - current[right]))
     for (int j = 0; j < t_max; j++) {
 
