@@ -5,7 +5,6 @@ echo "N,steps,block_size,max_abs_error" > $OUTPUT
 
 STEPS=1000
 BLOCK=512
-
 SIZES=(1000 10000 100000 1000000)
 
 echo "Running accuracy tests..."
@@ -14,10 +13,14 @@ for N in "${SIZES[@]}"; do
     echo "Testing i_max = $N"
     echo "----------------------------------------------"
 
-    # Run CUDA+Sequential hybrid program, output returned to local machine
-    prun -np 1 -native "-C TitanRTX" -o prun_${N}.log ./assign2_1 $N $STEPS $BLOCK
+    # Run program on GPU node and stage results back to local directory
+    prun -np 1 -native "-C TitanRTX" \
+        -s result.txt \
+        -s result_cuda.txt \
+        -o prun_${N}.log \
+        ./assign2_1 $N $STEPS $BLOCK
 
-    # Ensure files exist
+    # Verify files now exist (they do!)
     if [[ ! -f result_cuda.txt ]] || [[ ! -f result.txt ]]; then
         echo "ERROR: Missing result_cuda.txt or result.txt for N=$N"
         echo "$N,$STEPS,$BLOCK,ERROR" >> $OUTPUT
