@@ -12,7 +12,7 @@ STEPS=1000
 BLOCK=512
 
 # Array sizes to test
-SIZES=(1000 10000 100000 1000000)
+SIZES=(1000 10000 100000 1000000 10000000)
 
 echo "Running accuracy tests..."
 
