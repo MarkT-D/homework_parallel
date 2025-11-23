@@ -2,9 +2,7 @@
 
 # ===================================================
 # DAS5 Accuracy Testing Script for GPU assignment
-# ===================================================
-# This version requests a TitanRTX GPU node that is actually available
-# and avoids old -s reservation issues. It also checks output files.
+# Fixed version — no invalid TRES/GRES options.
 # ===================================================
 
 OUTPUT="accuracy.csv"
@@ -23,10 +21,10 @@ for N in "${SIZES[@]}"; do
     echo "Testing i_max = $N"
     echo "----------------------------------------------"
 
-    # Run CUDA+Sequential hybrid program on 1 TitanRTX GPU node
-    prun -v -np 1 -native '-C TitanRTX --gres=gpu:1' ./assign2_1 $N $STEPS $BLOCK
+    # Correct DAS5 GPU command (no --gres)
+    prun -v -np 1 -native "-C TitanRTX" ./assign2_1 $N $STEPS $BLOCK
 
-    # Check if files exist
+    # Check if output files exist
     if [[ ! -f result_cuda.txt ]] || [[ ! -f result.txt ]]; then
         echo "ERROR: Missing result_cuda.txt or result.txt for N=$N"
         echo "$N,$STEPS,$BLOCK,ERROR" >> $OUTPUT
@@ -45,7 +43,7 @@ EOF
     echo "$N,$STEPS,$BLOCK,$ERROR" >> $OUTPUT
     echo "Error for N=$N: $ERROR"
 
-    # Optional: remove results after each run to avoid confusion
+    # Clean for next run
     rm -f result.txt result_cuda.txt
 done
 
