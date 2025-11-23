@@ -154,9 +154,7 @@ double *simulate(const long i_max, const long t_max, const long block_size,
 }
 
 /*
- * Executes the entire simulation.
- *
- * Implement your code here.
+ * Executes the entire simulation in sequence.
  *
  * i_max: how many data points are on a single wave
  * t_max: how many iterations the simulation should run
@@ -169,7 +167,6 @@ double *simulateSeq(const int i_max, const int t_max, const int num_threads,
         double *old_array, double *current_array, double *next_array)
 {
     double C = 0.15;
-    // new = 2*current - old + c*(current[left] - (2*current - current[right]))
     for (int j = 0; j < t_max; j++) {
 
         for (int i = 0; i < i_max; i++) {
@@ -183,7 +180,6 @@ double *simulateSeq(const int i_max, const int t_max, const int num_threads,
                 + C * (current_array[i-1] - (2*current_array[i] - current_array[i+1]));
 
             }
-            // printf("%lf", next_array[i]);
 
         }
         double *temp = old_array;
@@ -193,14 +189,6 @@ double *simulateSeq(const int i_max, const int t_max, const int num_threads,
     }
     printf("\n");
 
-    /*
-     * After each timestep, you should swap the buffers around. Watch out none
-     * of the threads actually use the buffers at that time.
-     */
-
-
-    /* You should return a pointer to the array with the final results. */
-    // current_array[0] = 55555;
     return current_array;
 }
 

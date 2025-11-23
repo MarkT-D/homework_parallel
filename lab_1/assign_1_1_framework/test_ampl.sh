@@ -15,7 +15,7 @@ THREADS=512
 # Array of problem sizes
 sizes=(1000 10000 100000 1000000 10000000)
 
-echo "Running wave equation benchmarks..."
+echo "Running Pthreads wave equation benchmarks..."
 echo "Timesteps: $STEPS"
 echo "Threads:   $THREADS"
 echo "========================================"
@@ -23,7 +23,7 @@ echo "========================================"
 for N in "${sizes[@]}"; do
     echo ""
     echo ">>> Running N=$N"
-    prun -np 1 -native "-C TitanRTX" ./assign2_1 $N $STEPS $THREADS
+    prun -np 1 -native "-C TitanRTX" ./assign1_1 $N $STEPS $THREADS
 done
 
 echo ""
