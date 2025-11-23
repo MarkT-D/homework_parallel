@@ -27,7 +27,7 @@ for N in "${sizes[@]}"; do
     LOG="run_${N}.log"
 
     # Capture full prun output into a log file
-    prun -np 1 assign1_1 $N $STEPS $THREADS &> $LOG
+    prun -v -np 1 assign1_1 $N $STEPS $THREADS &> $LOG
 
     # Extract timing data from program output
     RAW=$(grep -Eo "Took [0-9]+\.[0-9]+ seconds" "$LOG" | grep -Eo "[0-9]+\.[0-9]+")

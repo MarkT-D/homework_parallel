@@ -5,11 +5,11 @@ THREADS=512
 
 sizes=(1000 10000 100000 1000000 10000000)
 
-CSV="results_pthreads_assign2_1.csv"
+CSV="results_openMP_assign2_1.csv"
 
 echo "N,steps,threads,raw_time,normalized_time" > $CSV
 
-echo "Running Pthreads wave equation benchmarks..."
+echo "Running OpenMP wave equation benchmarks..."
 echo "Timesteps: $STEPS"
 echo "Threads:   $THREADS"
 echo "========================================"
@@ -22,7 +22,7 @@ for N in "${sizes[@]}"; do
 
     LOG="run_${N}.log"
 
-    prun -np 1 assign2_1 $N $STEPS $THREADS &> $LOG
+    prun -v -np 1 assign1_2 $N $STEPS $THREADS &> $LOG
 
     RAW=$(grep -Eo "Took [0-9]+\.[0-9]+ seconds" $LOG | grep -Eo "[0-9]+\.[0-9]+")
     NORM=$(grep -Eo "Normalized: [0-9]+\.[0-9]+e?-?[0-9]* seconds" $LOG | grep -Eo "[0-9]+\.[0-9]+e?-?[0-9]*")
