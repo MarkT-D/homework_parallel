@@ -26,7 +26,7 @@ for N in "${sizes[@]}"; do
     echo ""
     echo ">>> Running N=$N"
 
-    prun -np 1 assign1_2 $N $STEPS $OMP_THREADS
+    prun -v -np 1 assign1_2 $N $STEPS $OMP_THREADS
 done
 
 echo ""
