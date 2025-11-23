@@ -23,7 +23,7 @@ echo "========================================"
 for N in "${sizes[@]}"; do
     echo ""
     echo ">>> Running N=$N"
-    prun -np 1 -native "-C TitanRTX" ./assign1_1 $N $STEPS $THREADS
+    prun -v -np 1 assign1_1 $N $STEPS $THREADS
 done
 
 echo ""
