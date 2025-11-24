@@ -67,7 +67,7 @@ clean:
 
 # Compiles & runs the code on the DAS
 run: assign2_1
-	prun -v -np 1 -native "-C TitanX --gres=gpu:1" ./assign2_1 $(RUNARGS)
+	prun -v -np 1 -native "-C TitanX" ./assign2_1 $(RUNARGS)
 # Compiles & runs the code on a local, CUDA-supported machine
 runlocal: assign2_1
 	./assign2_1 $(RUNARGS)

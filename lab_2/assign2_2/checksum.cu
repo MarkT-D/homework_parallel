@@ -1,8 +1,14 @@
 /*
- * checksum.cu
+ * Names: E. Ottens, M. Temchenko
+ * UvAnetIDs: 14425289, 15185869
+ * Course: Distributed and Parallel Programming
  *
- * You can implement the CUDA-accelerated checksum calculator in this file.
- *
+ * Implementation of an additive checksum calculation, parallelized on the GPU
+ * using CUDA. The program contains host code for data handling and timing,
+ * and device code that performs a block-level parallel reduction with atomic
+ * accumulation. Parallelization distributes input elements across threads
+ * using a grid-stride loop. Sequential implementations are provided
+ * to compare correctness and performance.
  */
 
 #include <stdio.h>

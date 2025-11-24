@@ -7,7 +7,8 @@
  * CUDA. The code is divided by CUDA into host and device code. The host code
  * is the CPU code while the device code is the GPU code.
  * The simulation parallelizes by using one thread per space/data point
- * computation and rotates arrays after each time step.
+ * computation and rotates arrays after each time step. The sequential version
+ * is added for performance comparison.
  */
 
 #include <cstdlib>
