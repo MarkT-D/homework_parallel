@@ -1,9 +1,12 @@
 /*
- * caesar.cu
+ * Names: E. Ottens, M. Temchenko
+ * UvAnetIDs: 14425289, 15185869
+ * Course: Distributed and Parallel Programming
  *
- * You can implement your CUDA-accelerated encryption and decryption algorithms
- * in this file.
- *
+ * CUDA-based Caesar/Vigenère cipher implementation.
+ * Parallelization assigns one thread per character, applying the key
+ * cyclically across the input. The sequential versions are provided
+ * for verification and performance comparison.
  */
 
 #include <stdio.h>
@@ -40,7 +43,6 @@ static void checkCudaCall(cudaError_t result) {
 /* Change this kernel to properly encrypt the given data. The result should be
  * written to the given out data. */
 __global__ void encryptKernel(char* deviceDataIn, char* deviceDataOut, int n, const int* deviceKey, int key_length) {
-    
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n) return;   // bounds check
 
@@ -53,8 +55,6 @@ __global__ void encryptKernel(char* deviceDataIn, char* deviceDataOut, int n, co
 /* Change this kernel to properly decrypt the given data. The result should be
  * written to the given out data. */
 __global__ void decryptKernel(char* deviceDataIn, char* deviceDataOut, int n, const int* deviceKey, int key_length) {
-    
-    
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx >= n) return;
 
@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
         cout << "Usage: " << argv[0] << " key..." << endl;
         cout << " - key: one or more values for the encryption key, separated "
                 "by spaces" << endl;
-        
+
         return EXIT_FAILURE;
     }
 

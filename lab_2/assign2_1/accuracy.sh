@@ -1,59 +1,51 @@
 #!/bin/bash
 
-# CSV output file
+# ===================================================
+# DAS5 Accuracy Testing Script for GPU assignment
+# Fixed version — no invalid TRES/GRES options.
+# ===================================================
+
 OUTPUT="accuracy.csv"
 echo "N,steps,block_size,max_abs_error" > $OUTPUT
 
-# Parameters
-N=1000000
 STEPS=1000
 BLOCK=512
 
-# Step 1: Compile sequential code if not already compiled
-if [ ! -f assign2_seq ]; then
-    echo "Compiling sequential code..."
-    gcc -O2 -o assign2_seq assign2_seq.c -lm
-    if [ $? -ne 0 ]; then
-        echo "Compilation failed!"
-        exit 1
+# Array sizes to test
+SIZES=(1000 10000 100000 1000000 10000000)
+
+echo "Running accuracy tests..."
+
+for N in "${SIZES[@]}"; do
+    echo "----------------------------------------------"
+    echo "Testing i_max = $N"
+    echo "----------------------------------------------"
+
+    # Correct DAS5 GPU command (no --gres)
+    prun -v -np 1 -native "-C TitanRTX" ./assign2_1 $N $STEPS $BLOCK
+
+    # Check if output files exist
+    if [[ ! -f result_cuda.txt ]] || [[ ! -f result.txt ]]; then
+        echo "ERROR: Missing result_cuda.txt or result.txt for N=$N"
+        echo "$N,$STEPS,$BLOCK,ERROR" >> $OUTPUT
+        continue
     fi
-fi
 
-# Step 2: Run CUDA version
-echo "Running CUDA version..."
-prun -np 1 -native "-C TitanRTX" ./assign2_1 $N $STEPS $BLOCK
-if [ ! -f result.txt ]; then
-    echo "CUDA program did not produce result.txt!"
-    exit 1
-fi
-mv result.txt result_cuda.txt
-
-# Step 3: Run sequential version
-echo "Running sequential version..."
-./assign2_seq $N $STEPS 1
-if [ ! -f result.txt ]; then
-    echo "Sequential program did not produce result.txt!"
-    exit 1
-fi
-mv result.txt result_seq.txt
-
-# Step 4: Compare using Python / NumPy
-# Make sure NumPy is available on DAS-5
-if ! python3 -c "import numpy" &> /dev/null; then
-    echo "NumPy not found. Load a module with: module load py-numpy"
-    exit 1
-fi
-
-ERROR=$(python3 - <<EOF
+    # Compare arrays using Python
+    ERROR=$(python3 - <<EOF
 import numpy as np
-
-cuda = np.loadtxt("result_cuda.txt")
-seq  = np.loadtxt("result_seq.txt")
-
+cuda = np.loadtxt("result.txt")
+seq  = np.loadtxt("result_cuda.txt")
 print(np.max(np.abs(cuda - seq)))
 EOF
 )
 
-# Step 5: Write to CSV
-echo "$N,$STEPS,$BLOCK,$ERROR" >> $OUTPUT
-echo "Done! Results saved to $OUTPUT"
+    echo "$N,$STEPS,$BLOCK,$ERROR" >> $OUTPUT
+    echo "Error for N=$N: $ERROR"
+
+    # Clean for next run
+    rm -f result.txt result_cuda.txt
+done
+
+echo ""
+echo "Done! Accuracy results saved to accuracy.csv"

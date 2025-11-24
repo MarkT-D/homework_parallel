@@ -64,9 +64,6 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    // Initialize the timer
-    timer waveTimer("wave timer");
-
     // Declare the arrays
     double *old_array     = new double[i_max]();
     double *current_array = new double[i_max]();
@@ -76,7 +73,23 @@ int main(int argc, char* argv[]) {
     fill(old_array, 1, i_max/4, 0, 2*3.14);
     fill(current_array, 2, i_max/4, 0, 2*3.14);
 
+    // Time and run the sequential wave simulation in simulate.cc
+    timer seqTimer("Sequential wave timer");
+    seqTimer.start();
+    double *seq_result_array = simulateSeq(
+        i_max, t_max, 1,
+        old_array, current_array, next_array
+    );
+    seqTimer.stop();
+    cout << seqTimer;
+    file_write_double_array("result_cuda.txt", seq_result_array, i_max);
+
+    fill(old_array, 1, i_max / 4, 0, 2 * M_PI);
+    fill(current_array, 2, i_max / 4, 0, 2 * M_PI);
+
     // Time & run the wave equation simulation in simulate.cc
+    // Initialize the timer
+    timer waveTimer("GPU wave timer");
     waveTimer.start();
     double *result_array = simulate(
         i_max, t_max, block_size,
