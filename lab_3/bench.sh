@@ -1,13 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-PROG_BLOCK=./assign3_1
-PROG_NB=./assign3_1_nb
+PROG_BLOCK=./assign3_1       # blocking (3.1)
+PROG_NB=./assign3_1_nb       # non-blocking (3.2)
 
 # Problem sizes: 1e3 .. 1e8
 SIZES=(1000 10000 100000 1000000 10000000 100000000)
 
-TMAX=1000
 
 OUTFILE="bench_results.csv"
 
@@ -45,14 +44,14 @@ run_case() {
     local imax="$5"
     local tmax="$6"
 
+    # On DAS: prun -np <nodes> -<ppn>, total ranks = nodes * ppn
     local total=$((nodes * ppn))
 
     # Small status line (will scroll), main visual is the progress bar
     echo
     echo "Running $prog [$mode] i_max=$imax t_max=$tmax nodes=$nodes ppn=$ppn (total=$total)"
 
-    # Call prun and capture output
-    out=$(prun -v -np "$total" -"$ppn" \
+    out=$(prun -v -np "$nodes" -"$ppn" \
         -sge-script "$PRUN_ETC/prun-openmpi" \
         "$prog" "$imax" "$tmax" 2>/dev/null)
 
