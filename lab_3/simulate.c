@@ -85,51 +85,134 @@ double *simulate(const int i_max, const int t_max, double *old_array,
     /* Time-stepping loop. */
     for (int t = 0; t < t_max; t++) {
 
-        /* Exchange halo values for curr_local using blocking communication. */
+        #ifdef USE_NONBLOCKING
+            /* --- 3.2: fully non-blocking halo exchange --- */
+            MPI_Request reqs[4];
+            int nreq = 0;
 
-        /* Left neighbour: send first interior point, receive into left halo. */
-        if (rank > 0) {
-            MPI_Sendrecv(&curr_local[1],           1, MPI_DOUBLE, rank - 1, 0,
-                         &curr_local[0],           1, MPI_DOUBLE, rank - 1, 1,
-                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        } else {
-            curr_local[0] = 0.0;
-        }
-
-        /* Right neighbour: send last interior point, receive into right halo. */
-        if (rank < size - 1) {
-            MPI_Sendrecv(&curr_local[local_n],     1, MPI_DOUBLE, rank + 1, 1,
-                         &curr_local[local_n + 1], 1, MPI_DOUBLE, rank + 1, 0,
-                         MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        } else {
-            curr_local[local_n + 1] = 0.0;
-        }
-
-        /* Update local points: j = 1..local_n map to global i = global_start + (j-1). */
-        for (int j = 1; j <= local_n; j++) {
-            int i_global = global_start + (j - 1);
-
-            /* Fixed boundary conditions: global endpoints stay at 0. */
-            if (i_global == 0 || i_global == i_max - 1) {
-                next_local[j] = 0.0;
+            // Irecv halos
+            if (rank > 0) {
+                MPI_Irecv(&curr_local[0], 1, MPI_DOUBLE,
+                        rank - 1, 1, MPI_COMM_WORLD, &reqs[nreq++]);
             } else {
-                double u_im1 = curr_local[j - 1];
-                double u_i   = curr_local[j];
-                double u_ip1 = curr_local[j + 1];
-
-                next_local[j] =
-                    2.0 * u_i
-                    -      old_local[j]
-                    + C2 * (u_im1 - 2.0 * u_i + u_ip1);
+                curr_local[0] = 0.0;
             }
-        }
 
-        /* Rotate the three local arrays: old <- current, current <- next, next <- old. */
-        double *tmp   = old_local;
-        old_local     = curr_local;
-        curr_local    = next_local;
-        next_local    = tmp;
-    }
+            if (rank < size - 1) {
+                MPI_Irecv(&curr_local[local_n + 1], 1, MPI_DOUBLE,
+                        rank + 1, 0, MPI_COMM_WORLD, &reqs[nreq++]);
+            } else {
+                curr_local[local_n + 1] = 0.0;
+            }
+
+            // Isend boundaries
+            if (rank > 0) {
+                MPI_Isend(&curr_local[1], 1, MPI_DOUBLE,
+                        rank - 1, 0, MPI_COMM_WORLD, &reqs[nreq++]);
+            }
+            if (rank < size - 1) {
+                MPI_Isend(&curr_local[local_n], 1, MPI_DOUBLE,
+                        rank + 1, 1, MPI_COMM_WORLD, &reqs[nreq++]);
+            }
+
+            // Compute interior j = 2 .. local_n-1
+            for (int j = 2; j <= local_n - 1; j++) {
+                int i_global = global_start + (j - 1);
+                if (i_global == 0 || i_global == i_max - 1) {
+                    next_local[j] = 0.0;
+                } else {
+                    double u_im1 = curr_local[j - 1];
+                    double u_i   = curr_local[j];
+                    double u_ip1 = curr_local[j + 1];
+
+                    next_local[j] =
+                        2.0 * u_i
+                        -      old_local[j]
+                        + C2 * (u_im1 - 2.0 * u_i + u_ip1);
+                }
+            }
+
+            if (nreq > 0) {
+                MPI_Waitall(nreq, reqs, MPI_STATUSES_IGNORE);
+            }
+
+            // Compute boundaries j=1 and j=local_n (if they exist)
+            if (local_n >= 1) {
+                int j = 1;
+                int i_global = global_start + (j - 1);
+                if (i_global == 0 || i_global == i_max - 1) {
+                    next_local[j] = 0.0;
+                } else {
+                    double u_im1 = curr_local[j - 1];
+                    double u_i   = curr_local[j];
+                    double u_ip1 = curr_local[j + 1];
+
+                    next_local[j] =
+                        2.0 * u_i
+                        -      old_local[j]
+                        + C2 * (u_im1 - 2.0 * u_i + u_ip1);
+                }
+            }
+            if (local_n >= 2) {
+                int j = local_n;
+                int i_global = global_start + (j - 1);
+                if (i_global == 0 || i_global == i_max - 1) {
+                    next_local[j] = 0.0;
+                } else {
+                    double u_im1 = curr_local[j - 1];
+                    double u_i   = curr_local[j];
+                    double u_ip1 = curr_local[j + 1];
+
+                    next_local[j] =
+                        2.0 * u_i
+                        -      old_local[j]
+                        + C2 * (u_im1 - 2.0 * u_i + u_ip1);
+                }
+            }
+
+        #else
+            /* --- 3.1: blocking halo exchange via Sendrecv --- */
+
+            if (rank > 0) {
+                MPI_Sendrecv(&curr_local[1],           1, MPI_DOUBLE, rank - 1, 0,
+                            &curr_local[0],           1, MPI_DOUBLE, rank - 1, 1,
+                            MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            } else {
+                curr_local[0] = 0.0;
+            }
+
+            if (rank < size - 1) {
+                MPI_Sendrecv(&curr_local[local_n],     1, MPI_DOUBLE, rank + 1, 1,
+                            &curr_local[local_n + 1], 1, MPI_DOUBLE, rank + 1, 0,
+                            MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            } else {
+                curr_local[local_n + 1] = 0.0;
+            }
+
+            // Compute all points j = 1 .. local_n (halos are already valid)
+            for (int j = 1; j <= local_n; j++) {
+                int i_global = global_start + (j - 1);
+                if (i_global == 0 || i_global == i_max - 1) {
+                    next_local[j] = 0.0;
+                } else {
+                    double u_im1 = curr_local[j - 1];
+                    double u_i   = curr_local[j];
+                    double u_ip1 = curr_local[j + 1];
+
+                    next_local[j] =
+                        2.0 * u_i
+                        -      old_local[j]
+                        + C2 * (u_im1 - 2.0 * u_i + u_ip1);
+                }
+            }
+        #endif
+
+            /* Rotate the three local arrays: old <- current, current <- next, next <- old. */
+            double *tmp   = old_local;
+            old_local     = curr_local;
+            curr_local    = next_local;
+            next_local    = tmp;
+        }
 
     /* Gather final current values back into current_array on rank 0. */
     MPI_Gatherv(&curr_local[1], local_n, MPI_DOUBLE,
