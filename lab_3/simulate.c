@@ -18,6 +18,81 @@ const double C2 = 0.15;
 
 
 /* Add any functions you may need (like a worker) here. */
+/* Add any functions you may need (like a worker) here. */
+/*
+Assignment 3.3
+ * buffer: buffer address
+ * count: buffer size
+ * datatype: datatype of entry
+ * root: root process (sender)
+ * communicator: communicator
+*/
+int MYMPI_Bcast (void* buffer, int count , MPI_Datatype datatype, int root,
+    MPI_Comm communicator)
+{
+    int rank, size;
+    MPI_Comm_rank(communicator, &rank);
+    MPI_Comm_size(communicator, &size);
+
+    // Case: only one process (only the root)
+    if (size == 1) {
+        return MPI_SUCCESS;
+    }
+
+    //Bidirectional wave from root
+    // Calculate circular distances and directions
+    int distance_forward = (rank - root + size) % size;
+    int distance_backward = (root - rank + size) % size;
+
+    int recv_from = -1;
+    int send_to = -1;
+
+    if (rank == root) {
+        // Root initializes both neighbor locations
+        int next = (root + 1) % size;
+        int prev = (root - 1 + size) % size;
+
+        if (size == 2) {
+            // Case: only one neighbor
+            MPI_Send(buffer, count, datatype, next, 0, communicator);
+        } else {
+            // Case: two neighbors
+            MPI_Send(buffer, count, datatype, next, 0, communicator);
+            MPI_Send(buffer, count, datatype, prev, 0, communicator);
+        }
+    } else {
+        // Non-root processes receive and potentially forward
+        // Determine which direction is shorter to root
+        if (distance_forward <= distance_backward) {
+            // Receive from previous neighbor (counter-clockwise from root)
+            recv_from = (rank - 1 + size) % size;
+
+            // Forward to next neighbor if not at the meeting point
+            if (distance_forward < (size + 1) / 2) {
+                send_to = (rank + 1) % size;
+            }
+        } else {
+            // Receive from next neighbor (clockwise from root)
+            recv_from = (rank + 1) % size;
+
+            // Forward to previous neighbor if not at the meeting point
+            if (distance_backward < (size + 1) / 2) {
+                send_to = (rank - 1 + size) % size;
+            }
+        }
+
+        // Receive broadcast data from recv_from
+        MPI_Recv(buffer, count, datatype, recv_from, 0,
+                 communicator, MPI_STATUS_IGNORE);
+
+        // Forward to next process if necessary
+        if (send_to != -1) {
+            MPI_Send(buffer, count, datatype, send_to, 0, communicator);
+        }
+    }
+
+    return MPI_SUCCESS;
+}
 
 
 /*
