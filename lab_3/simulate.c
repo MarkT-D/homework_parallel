@@ -11,14 +11,9 @@
 #include "simulate.h"
 
 
-/* Add any global variables you may need. */
-
 /* Wave propagation constant (lambda^2). */
 const double C2 = 0.15;
 
-
-/* Add any functions you may need (like a worker) here. */
-/* Add any functions you may need (like a worker) here. */
 /*
 Assignment 3.3
  * buffer: buffer address
@@ -93,7 +88,6 @@ int MYMPI_Bcast (void* buffer, int count , MPI_Datatype datatype, int root,
 
     return MPI_SUCCESS;
 }
-
 
 /*
  * Executes the entire simulation.
