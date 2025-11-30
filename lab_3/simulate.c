@@ -1,7 +1,15 @@
 /*
- * simulate.c
+ * Names: E. Ottens, M. Temchenko
+ * UvAnetIDs: 14425289, 15185869
+ * Course: Distributed and parallel programming
  *
- * Implement your (parallel) simulation here!
+ * Implementation of the 1-dimensional wave equation, parallelized using MPI.
+ * The simulation divides the spatial domain over processes and uses halo cells
+ * to exchange boundary data. Both blocking (Sendrecv) and non-blocking
+ * (Isend/Irecv) communication strategies are implemented. After each time
+ * step, local arrays are rotated to continue the simulation. A bidirectional
+ * broadcast (MYMPI_Bcast) is also included to show message propagation in a
+ * ring topology.
  */
 
 #include <stdio.h>
@@ -11,13 +19,9 @@
 #include "simulate.h"
 
 
-/* Add any global variables you may need. */
-
 /* Wave propagation constant (lambda^2). */
 const double C2 = 0.15;
 
-
-/* Add any functions you may need (like a worker) here. */
 /*
 Assignment 3.3
  * buffer: buffer address
@@ -97,8 +101,6 @@ int MYMPI_Bcast (void* buffer, int count , MPI_Datatype datatype, int root,
 /*
  * Executes the entire simulation.
  *
- * Implement your code here.
- *
  * i_max: how many data points are on a single wave
  * t_max: how many iterations the simulation should run
  * old_array: array of size i_max filled with data for t-1
@@ -112,13 +114,13 @@ double *simulate(const int i_max, const int t_max, double *old_array,
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 
-    /* Compute 1D block decomposition: how many points per process. */
+    // Compute 1D block decomposition: how many points per process
     int base = i_max / size;
     int rem  = i_max % size;
 
     int local_n = base + (rank < rem ? 1 : 0);
 
-    /* Build counts and displacements arrays for Scatterv/Gatherv. */
+    // Build counts and displacements arrays for Scatterv/Gatherv
     int *counts = malloc(size * sizeof(int));
     int *displs = malloc(size * sizeof(int));
     if (!counts || !displs) {
@@ -132,7 +134,8 @@ double *simulate(const int i_max, const int t_max, double *old_array,
     }
     int global_start = displs[rank];
 
-    /* Local arrays include 2 halo cells: index 0 = left halo, index local_n+1 = right halo. */
+    /* Local arrays include 2 halo cells: index 0 = left halo,
+       index local_n+1 = right halo */
     double *old_local   = malloc((local_n + 2) * sizeof(double));
     double *curr_local  = malloc((local_n + 2) * sizeof(double));
     double *next_local  = malloc((local_n + 2) * sizeof(double));
@@ -142,7 +145,8 @@ double *simulate(const int i_max, const int t_max, double *old_array,
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
-    /* Scatter global initial data into local arrays (interior part starts at index 1). */
+    /* Scatter global initial data into local arrays (interior
+       part starts at index 1) */
     MPI_Scatterv(old_array,     counts, displs, MPI_DOUBLE,
                  &old_local[1], local_n,        MPI_DOUBLE,
                  0, MPI_COMM_WORLD);
@@ -151,12 +155,12 @@ double *simulate(const int i_max, const int t_max, double *old_array,
                  &curr_local[1],    local_n,        MPI_DOUBLE,
                  0, MPI_COMM_WORLD);
 
-    /* Initialise halos to zero; they will be overwritten for interior ranks. */
+    // Initialise halos to zero; they will be overwritten for interior ranks
     old_local[0] = old_local[local_n + 1] = 0.0;
     curr_local[0] = curr_local[local_n + 1] = 0.0;
     next_local[0] = next_local[local_n + 1] = 0.0;
 
-    /* Time-stepping loop. */
+    // Time-stepping loop
     for (int t = 0; t < t_max; t++) {
 
         #ifdef USE_NONBLOCKING
@@ -281,14 +285,15 @@ double *simulate(const int i_max, const int t_max, double *old_array,
             }
         #endif
 
-            /* Rotate the three local arrays: old <- current, current <- next, next <- old. */
+            /* Rotate the three local arrays: old <- current, current <- next,
+               next <- old */
             double *tmp   = old_local;
             old_local     = curr_local;
             curr_local    = next_local;
             next_local    = tmp;
         }
 
-    /* Gather final current values back into current_array on rank 0. */
+    // Gather final current values back into current_array on rank 0
     MPI_Gatherv(&curr_local[1], local_n, MPI_DOUBLE,
                 current_array,  counts,  displs, MPI_DOUBLE,
                 0, MPI_COMM_WORLD);
@@ -299,6 +304,6 @@ double *simulate(const int i_max, const int t_max, double *old_array,
     free(counts);
     free(displs);
 
-    /* Only rank 0 has a valid global result in current_array after Gatherv. */
+    // Only rank 0 has a valid global result in current_array after Gatherv
     return current_array;
 }
