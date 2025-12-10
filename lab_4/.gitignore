@@ -1,0 +1,24 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Python / JVM / build artifacts
+*.class
+*.log
+target/
+out/
+
+# Node / JS (if you end up using it)
+node_modules/
+
+# Spark / Docker stuff
+spark/logs/
+spark/work/
+spark/tmp/
+
+# Data files (optional, you can keep your CSV outside git)
+data/*.csv
