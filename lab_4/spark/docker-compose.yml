@@ -1,0 +1,42 @@
+services:
+  spark:
+    image: docker.io/bitnamilegacy/spark:4.0
+    container_name: spark-master
+    user: "0"   # run as root
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      # you can drop SPARK_USER if you want; not needed when using user: "0"
+      # - SPARK_USER=spark
+      - SPARK_LOCAL_IVY2DIR=/tmp/.ivy2
+      - HOME=/tmp
+      - "SPARK_SUBMIT_OPTS=-Duser.home=/tmp -Divy.default.ivy.user.dir=/tmp/.ivy2.5.2"
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+    volumes:
+      - ../data:/opt/bitnami/spark/data  
+
+  spark-worker:
+    image: docker.io/bitnamilegacy/spark:4.0
+    depends_on:
+      - spark
+    user: "0"   # run as root
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      # - SPARK_USER=spark
+      - SPARK_LOCAL_IVY2DIR=/tmp/.ivy2
+      - HOME=/tmp
+      - "SPARK_SUBMIT_OPTS=-Duser.home=/tmp -Divy.default.ivy.user.dir=/tmp/.ivy2.5.2"
+    volumes:
+      - ../data:/opt/bitnami/spark/data
